@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Manager Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 5px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .output {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #27ae60;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 OTP Manager Test Interface</h1>
+        <p>Test the One-Time Passcode Manager for Kiwi Sports Apparel</p>
+
+        <!-- Test Section 1: Add Passcode -->
+        <div class="test-section">
+            <h3>Test 1: Add New Passcode</h3>
+            <input type="number" id="passcode1" placeholder="Enter passcode (e.g., 123456)" value="123456">
+            <input type="number" id="duration1" placeholder="Duration (ms)" value="300000">
+            <button onclick="testAddPasscode()">Add Passcode</button>
+        </div>
+
+        <!-- Test Section 2: Validate Passcode -->
+        <div class="test-section">
+            <h3>Test 2: Validate Passcode</h3>
+            <input type="number" id="passcode2" placeholder="Enter passcode" value="123456">
+            <button onclick="testValidatePasscode()">Validate</button>
+        </div>
+
+        <!-- Test Section 3: Update Existing -->
+        <div class="test-section">
+            <h3>Test 3: Update Existing Passcode</h3>
+            <input type="number" id="passcode3" placeholder="Enter passcode" value="123456">
+            <input type="number" id="duration3" placeholder="New duration (ms)" value="600000">
+            <button onclick="testUpdatePasscode()">Update Duration</button>
+        </div>
+
+        <!-- Test Section 4: Check Remaining Time -->
+        <div class="test-section">
+            <h3>Test 4: Check Remaining Time</h3>
+            <input type="number" id="passcode4" placeholder="Enter passcode" value="123456">
+            <button onclick="testRemainingTime()">Check Time</button>
+        </div>
+
+        <!-- Test Section 5: Test Expiration -->
+        <div class="test-section">
+            <h3>Test 5: Test Expiration (Short Duration)</h3>
+            <button onclick="testExpiration()">Add Passcode with 3-second expiry</button>
+        </div>
+
+        <!-- Test Section 6: Remove Passcode -->
+        <div class="test-section">
+            <h3>Test 6: Remove Passcode</h3>
+            <input type="number" id="passcode6" placeholder="Enter passcode" value="123456">
+            <button onclick="testRemovePasscode()">Remove</button>
+        </div>
+
+        <!-- Run All Tests -->
+        <div class="test-section">
+            <h3>Run All Tests</h3>
+            <button onclick="runAllTests()" style="background: #27ae60;">Run Complete Test Suite</button>
+            <button onclick="clearOutput()" style="background: #95a5a6;">Clear Output</button>
+        </div>
+
+        <!-- Output Console -->
+        <div id="output" class="output">Console output will appear here...</div>
+    </div>
+
+    <script>
+        // OTP Manager Class (embedded)
+        class OTPManager {
+            constructor() {
+                this.passcodes = new Map();
+            }
+
+            addPasscode(passcode, duration = 300000) {
+                if (!Number.isInteger(passcode)) {
+                    throw new Error('Passcode must be an integer');
+                }
+                
+                if (!Number.isInteger(duration) || duration <= 0) {
+                    throw new Error('Duration must be a positive integer in milliseconds');
+                }
+
+                const exists = this.passcodes.has(passcode);
+                const expirationTime = Date.now() + duration;
+                this.passcodes.set(passcode, expirationTime);
+                
+                return exists;
+            }
+
+            validatePasscode(passcode) {
+                if (!this.passcodes.has(passcode)) {
+                    return false;
+                }
+
+                const expirationTime = this.passcodes.get(passcode);
+                const currentTime = Date.now();
+
+                if (currentTime > expirationTime) {
+                    this.passcodes.delete(passcode);
+                    return false;
+                }
+
+                return true;
+            }
+
+            removePasscode(passcode) {
+                return this.passcodes.delete(passcode);
+            }
+
+            cleanupExpired() {
+                const currentTime = Date.now();
+                const expiredKeys = [];
+
+                for (const [passcode, expirationTime] of this.passcodes.entries()) {
+                    if (currentTime > expirationTime) {
+                        expiredKeys.push(passcode);
+                    }
+                }
+
+                expiredKeys.forEach(key => this.passcodes.delete(key));
+                return expiredKeys.length;
+            }
+
+            getRemainingTime(passcode) {
+                if (!this.passcodes.has(passcode)) {
+                    return 0;
+                }
+
+                const expirationTime = this.passcodes.get(passcode);
+                const remainingTime = expirationTime - Date.now();
+
+                return remainingTime > 0 ? remainingTime : 0;
+            }
+
+            getActiveCount() {
+                this.cleanupExpired();
+                return this.passcodes.size;
+            }
+        }
+
+        // Initialize OTP Manager
+        const otpManager = new OTPManager();
+        const outputDiv = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#ecf0f1';
+            outputDiv.innerHTML += `<span style="color: ${color};">[${timestamp}] ${message}</span>\n`;
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+
+        function clearOutput() {
+            outputDiv.innerHTML = 'Console cleared...\n';
+        }
+
+        // Test Functions
+        function testAddPasscode() {
+            const passcode = parseInt(document.getElementById('passcode1').value);
+            const duration = parseInt(document.getElementById('duration1').value);
+            
+            try {
+                const existed = otpManager.addPasscode(passcode, duration);
+                log(`✓ Passcode ${passcode} added with ${duration}ms duration`, 'success');
+                log(`  Already existed: ${existed}`, 'info');
+            } catch (error) {
+                log(`✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function testValidatePasscode() {
+            const passcode = parseInt(document.getElementById('passcode2').value);
+            
+            const isValid = otpManager.validatePasscode(passcode);
+            if (isValid) {
+                log(`✓ Passcode ${passcode} is VALID`, 'success');
+            } else {
+                log(`✗ Passcode ${passcode} is INVALID or EXPIRED`, 'error');
+            }
+        }
+
+        function testUpdatePasscode() {
+            const passcode = parseInt(document.getElementById('passcode3').value);
+            const duration = parseInt(document.getElementById('duration3').value);
+            
+            const existed = otpManager.addPasscode(passcode, duration);
+            if (existed) {
+                log(`✓ Passcode ${passcode} duration UPDATED to ${duration}ms`, 'success');
+            } else {
+                log(`✓ New passcode ${passcode} added with ${duration}ms duration`, 'success');
+            }
+        }
+
+        function testRemainingTime() {
+            const passcode = parseInt(document.getElementById('passcode4').value);
+            
+            const remainingMs = otpManager.getRemainingTime(passcode);
+            const remainingSec = (remainingMs / 1000).toFixed(2);
+            
+            if (remainingMs > 0) {
+                log(`✓ Passcode ${passcode} has ${remainingSec} seconds remaining`, 'success');
+            } else {
+                log(`✗ Passcode ${passcode} has expired or doesn't exist`, 'error');
+            }
+        }
+
+        function testExpiration() {
+            const testPasscode = 999999;
+            otpManager.addPasscode(testPasscode, 3000); // 3 seconds
+            log(`✓ Added passcode ${testPasscode} with 3-second expiry`, 'success');
+            log(`  Waiting for expiration...`, 'info');
+            
+            setTimeout(() => {
+                const isValid = otpManager.validatePasscode(testPasscode);
+                if (!isValid) {
+                    log(`✓ Passcode ${testPasscode} correctly EXPIRED after 3 seconds`, 'success');
+                } else {
+                    log(`✗ Passcode ${testPasscode} should have expired!`, 'error');
+                }
+            }, 3500);
+        }
+
+        function testRemovePasscode() {
+            const passcode = parseInt(document.getElementById('passcode6').value);
+            
+            const removed = otpManager.removePasscode(passcode);
+            if (removed) {
+                log(`✓ Passcode ${passcode} successfully REMOVED`, 'success');
+            } else {
+                log(`✗ Passcode ${passcode} not found`, 'error');
+            }
+        }
+
+        function runAllTests() {
+            clearOutput();
+            log('=== RUNNING COMPLETE TEST SUITE ===', 'info');
+            log('', 'info');
+            
+            // Test 1: Add new passcode
+            log('TEST 1: Adding new passcode', 'info');
+            const passcode1 = 111111;
+            const existed1 = otpManager.addPasscode(passcode1, 300000);
+            log(`  Result: existed=${existed1} (should be false)`, existed1 ? 'error' : 'success');
+            log('', 'info');
+            
+            // Test 2: Validate active passcode
+            log('TEST 2: Validating active passcode', 'info');
+            const valid1 = otpManager.validatePasscode(passcode1);
+            log(`  Result: valid=${valid1} (should be true)`, valid1 ? 'success' : 'error');
+            log('', 'info');
+            
+            // Test 3: Update existing passcode
+            log('TEST 3: Updating existing passcode', 'info');
+            const existed2 = otpManager.addPasscode(passcode1, 600000);
+            log(`  Result: existed=${existed2} (should be true)`, existed2 ? 'success' : 'error');
+            log('', 'info');
+            
+            // Test 4: Check remaining time
+            log('TEST 4: Checking remaining time', 'info');
+            const remaining = otpManager.getRemainingTime(passcode1);
+            log(`  Result: ${(remaining/1000).toFixed(2)} seconds remaining`, 'success');
+            log('', 'info');
+            
+            // Test 5: Test expiration
+            log('TEST 5: Testing expiration mechanism', 'info');
+            const passcode2 = 222222;
+            otpManager.addPasscode(passcode2, 2000);
+            log(`  Added passcode ${passcode2} with 2-second expiry`, 'info');
+            
+            setTimeout(() => {
+                const valid2 = otpManager.validatePasscode(passcode2);
+                log(`  After 2.5 seconds: valid=${valid2} (should be false)`, valid2 ? 'error' : 'success');
+                log('', 'info');
+                
+                // Test 6: Remove passcode
+                log('TEST 6: Removing passcode', 'info');
+                const removed = otpManager.removePasscode(passcode1);
+                log(`  Result: removed=${removed} (should be true)`, removed ? 'success' : 'error');
+                log('', 'info');
+                
+                // Test 7: Validate removed passcode
+                log('TEST 7: Validating removed passcode', 'info');
+                const valid3 = otpManager.validatePasscode(passcode1);
+                log(`  Result: valid=${valid3} (should be false)`, valid3 ? 'error' : 'success');
+                log('', 'info');
+                
+                // Test 8: Active count
+                log('TEST 8: Checking active passcodes count', 'info');
+                const count = otpManager.getActiveCount();
+                log(`  Active passcodes: ${count}`, 'success');
+                log('', 'info');
+                
+                log('=== ALL TESTS COMPLETED ===', 'success');
+            }, 2500);
+        }
+
+        // Initial message
+        log('OTP Manager initialized and ready for testing!', 'success');
+        log('Click buttons above to test different features.', 'info');
+    </script>
+</body>
+</html>
